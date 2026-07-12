@@ -177,6 +177,12 @@ src
 
 ---
 
+# 🌐 Live Demo
+
+Access the live app here: https://ecosphere-wheat.vercel.app/
+
+---
+
 # 🚀 Getting Started
 
 Clone the repository
