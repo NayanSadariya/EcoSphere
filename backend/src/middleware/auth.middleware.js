@@ -36,6 +36,9 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Alias for backward compatibility/external usage
+const authenticateToken = protect;
+
 // Admin middleware
 const authorizeAdmin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
@@ -71,6 +74,7 @@ const authorizeEmployeeOrAbove = (req, res, next) => {
 
 export {
   protect,
+  authenticateToken,
   authorizeAdmin,
   authorizeManagerOrAbove,
   authorizeEmployeeOrAbove

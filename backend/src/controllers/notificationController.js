@@ -1,5 +1,5 @@
 import asyncHandler from 'express-async-handler';
-import { find, countDocuments, findOneAndUpdate, updateMany, findOneAndDelete } from '../models/Notification.js';
+import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 
 // @desc    Get notifications for the current user
@@ -17,12 +17,12 @@ const getNotifications = asyncHandler(async (req, res) => {
 
   // Get notifications with pagination
   const [notifications, total] = await Promise.all([
-    find(filter)
+    Notification.find(filter)
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
       .limit(parseInt(limit))
       .populate('recipient', 'name email'),
-    countDocuments(filter)
+    Notification.countDocuments(filter)
   ]);
 
   res.json({
@@ -40,7 +40,7 @@ const getNotifications = asyncHandler(async (req, res) => {
 // @route   GET /api/notifications/unread-count
 // @access  Private
 const getUnreadCount = asyncHandler(async (req, res) => {
-  const count = await countDocuments({
+  const count = await Notification.countDocuments({
     recipient: req.user.id,
     is_read: false
   });
@@ -52,7 +52,7 @@ const getUnreadCount = asyncHandler(async (req, res) => {
 // @route   PATCH /api/notifications/:id/read
 // @access  Private
 const markAsRead = asyncHandler(async (req, res) => {
-  const notification = await findOneAndUpdate(
+  const notification = await Notification.findOneAndUpdate(
     { _id: req.params.id, recipient: req.user.id },
     { is_read: true },
     { new: true }
@@ -70,7 +70,7 @@ const markAsRead = asyncHandler(async (req, res) => {
 // @route   PATCH /api/notifications/read-all
 // @access  Private
 const markAllAsRead = asyncHandler(async (req, res) => {
-  const result = await updateMany(
+  const result = await Notification.updateMany(
     { recipient: req.user.id, is_read: false },
     { is_read: true }
   );
@@ -85,7 +85,7 @@ const markAllAsRead = asyncHandler(async (req, res) => {
 // @route   DELETE /api/notifications/:id
 // @access  Private
 const deleteNotification = asyncHandler(async (req, res) => {
-  const notification = await findOneAndDelete({
+  const notification = await Notification.findOneAndDelete({
     _id: req.params.id,
     recipient: req.user.id
   });
@@ -114,12 +114,12 @@ const getAllNotifications = asyncHandler(async (req, res) => {
   // Get notifications with pagination
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const [notifications, total] = await Promise.all([
-    find(filter)
+    Notification.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .populate('recipient', 'name email'),
-    countDocuments(filter)
+    Notification.countDocuments(filter)
   ]);
 
   res.json({
@@ -133,7 +133,7 @@ const getAllNotifications = asyncHandler(async (req, res) => {
   });
 });
 
-export default {
+export {
   getNotifications,
   getUnreadCount,
   markAsRead,

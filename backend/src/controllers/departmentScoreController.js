@@ -1,11 +1,8 @@
 import asyncHandler from 'express-async-handler';
-import { find, countDocuments, findById, findOne } from '../models/DepartmentScore.js';
-import { find as _find } from '../models/Department.js';
-import { calculateAndUpdateDepartmentScore, calculateOrganizationalESGScore as _calculateOrganizationalESGScore } from '../utils/scoringService.js';
+import DepartmentScore from '../models/DepartmentScore.js';
+import Department from '../models/Department.js';
+import ScoringService from '../utils/scoringService.js';
 
-// @desc    Get all department scores
-// @route   GET /api/department-scores
-// @access  Private
 const getDepartmentScores = asyncHandler(async (req, res) => {
   const { department, page = 1, limit = 20 } = req.query;
 
@@ -16,12 +13,12 @@ const getDepartmentScores = asyncHandler(async (req, res) => {
   // Execute query with pagination
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const [scores, total] = await Promise.all([
-    find(filter)
+    DepartmentScore.find(filter)
       .populate('department', 'name code')
       .sort({ calculated_at: -1 })
       .skip(skip)
       .limit(parseInt(limit)),
-    countDocuments(filter)
+    DepartmentScore.countDocuments(filter)
   ]);
 
   res.json({
@@ -39,7 +36,7 @@ const getDepartmentScores = asyncHandler(async (req, res) => {
 // @route   GET /api/department-scores/:id
 // @access  Private
 const getDepartmentScoreById = asyncHandler(async (req, res) => {
-  const score = await findById(req.params.id)
+  const score = await DepartmentScore.findById(req.params.id)
     .populate('department', 'name code');
 
   if (score) {
@@ -54,7 +51,7 @@ const getDepartmentScoreById = asyncHandler(async (req, res) => {
 // @route   GET /api/departments/:departmentId/score
 // @access  Private
 const getDepartmentScoreByDeptId = asyncHandler(async (req, res) => {
-  const score = await findOne({
+  const score = await DepartmentScore.findOne({
     department: req.params.departmentId
   }).populate('department', 'name code');
 
@@ -63,7 +60,7 @@ const getDepartmentScoreByDeptId = asyncHandler(async (req, res) => {
   } else {
     // If no score exists, calculate and create one
     try {
-      const calculatedScore = await calculateAndUpdateDepartmentScore(req.params.departmentId);
+      const calculatedScore = await ScoringService.calculateAndUpdateDepartmentScore(req.params.departmentId);
       res.json(calculatedScore);
     } catch (error) {
       res.status(404);
@@ -73,11 +70,11 @@ const getDepartmentScoreByDeptId = asyncHandler(async (req, res) => {
 });
 
 // @desc    Calculate and update department score
-// @route   POST /api/department-scopes/:id/calculate
+// @route   POST /api/department-scores/:id/calculate
 // @access  Private/Admin
 const calculateDepartmentScore = asyncHandler(async (req, res) => {
   try {
-    const score = await calculateAndUpdateDepartmentScore(req.params.id);
+    const score = await ScoringService.calculateAndUpdateDepartmentScore(req.params.id);
     res.json({
       message: 'Department score calculated and updated successfully',
       score
@@ -94,13 +91,13 @@ const calculateDepartmentScore = asyncHandler(async (req, res) => {
 const calculateAllDepartmentScores = asyncHandler(async (req, res) => {
   try {
     // Get all departments
-    const departments = await _find({ status: 'active' });
+    const departments = await Department.find({ status: 'active' });
 
     // Calculate scores for each department
     const results = [];
     for (const dept of departments) {
       try {
-        const score = await calculateAndUpdateDepartmentScore(dept._id);
+        const score = await ScoringService.calculateAndUpdateDepartmentScore(dept._id);
         results.push({
           department: dept._id,
           departmentName: dept.name,
@@ -132,7 +129,7 @@ const calculateAllDepartmentScores = asyncHandler(async (req, res) => {
 // @access  Private
 const getOrganizationalESGScore = asyncHandler(async (req, res) => {
   try {
-    const score = await _calculateOrganizationalESGScore();
+    const score = await ScoringService.calculateOrganizationalESGScore();
     res.json({
       esg_score: score,
       calculated_at: new Date()
@@ -148,7 +145,7 @@ const getOrganizationalESGScore = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const calculateOrganizationalESGScore = asyncHandler(async (req, res) => {
   try {
-    const score = await _calculateOrganizationalESGScore();
+    const score = await ScoringService.calculateOrganizationalESGScore();
     res.json({
       message: 'Organizational ESG score calculated successfully',
       esg_score: score,
@@ -160,7 +157,7 @@ const calculateOrganizationalESGScore = asyncHandler(async (req, res) => {
   }
 });
 
-export default {
+export {
   getDepartmentScores,
   getDepartmentScoreById,
   getDepartmentScoreByDeptId,

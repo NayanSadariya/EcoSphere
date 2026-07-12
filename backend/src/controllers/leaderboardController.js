@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
-import { find, aggregate } from '../models/User.js';
+import User from '../models/User.js';
+import UserBadge from '../models/UserBadge.js';
 
 // @desc    Get leaderboard by XP
 // @route   GET /api/leaderboard/xp
@@ -11,7 +12,7 @@ const getLeaderboardByXP = asyncHandler(async (req, res) => {
   const filter = {};
   if (department) filter.department = department;
 
-  const leaders = await find(filter)
+  const leaders = await User.find(filter)
     .select('name email department role xp_total points_balance')
     .sort({ xp_total: -1 })
     .limit(parseInt(limit));
@@ -41,7 +42,7 @@ const getLeaderboardByPoints = asyncHandler(async (req, res) => {
   const filter = {};
   if (department) filter.department = department;
 
-  const leaders = await find(filter)
+  const leaders = await User.find(filter)
     .select('name email department role xp_total points_balance')
     .sort({ points_balance: -1 })
     .limit(parseInt(limit));
@@ -71,7 +72,7 @@ const getLeaderboardByBadges = asyncHandler(async (req, res) => {
   // We'll use the aggregation pipeline for efficiency
 
   const matchStage = {};
-  if (department) matchStage.department = department;
+  if (department) matchDepartment = { department };
 
   const pipeline = [
     { $match: matchStage },
@@ -105,7 +106,7 @@ const getLeaderboardByBadges = asyncHandler(async (req, res) => {
   ];
 
   try {
-    const leaders = await aggregate(pipeline);
+    const leaders = await User.aggregate(pipeline);
 
     // Add rank
     const rankedLeaders = leaders.map((user, index) => ({
@@ -123,7 +124,7 @@ const getLeaderboardByBadges = asyncHandler(async (req, res) => {
     res.json(rankedLeaders);
   } catch (error) {
     // Fallback to simpler method if aggregation fails
-    const users = await find(
+    const users = await User.find(
       department ? { department } : {}
     ).select('name email department role xp_total points_balance');
 
@@ -162,7 +163,7 @@ const getLeaderboardByBadges = asyncHandler(async (req, res) => {
   }
 });
 
-export default {
+export {
   getLeaderboardByXP,
   getLeaderboardByPoints,
   getLeaderboardByBadges

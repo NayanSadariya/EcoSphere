@@ -2,12 +2,9 @@ import asyncHandler from 'express-async-handler';
 import ComplianceIssue from '../models/ComplianceIssue.js';
 import Audit from '../models/Audit.js';
 import User from '../models/User.js';
-import { checkAndNotifyOverdueIssues as _checkAndNotifyOverdueIssues, getStatistics } from '../utils/complianceService.js';
-import { notifyNewComplianceIssue } from '../utils/notificationService.js';
+import ComplianceService from '../utils/complianceService.js';
+import NotificationService from '../utils/notificationService.js';
 
-// @desc    Get all compliance issues
-// @route   GET /api/compliance-issues
-// @access  Private
 const getComplianceIssues = asyncHandler(async (req, res) => {
   const { audit, severity, status, owner, page = 1, limit = 20 } = req.query;
 
@@ -42,9 +39,6 @@ const getComplianceIssues = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get a single compliance issue
-// @route   GET /api/compliance-issues/:id
-// @access  Private
 const getComplianceIssueById = asyncHandler(async (req, res) => {
   const issue = await ComplianceIssue.findById(req.params.id)
     .populate('audit', 'scope date department')
@@ -62,9 +56,6 @@ const getComplianceIssueById = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Create a new compliance issue
-// @route   POST /api/compliance-issues
-// @access  Private/Admin
 const createComplianceIssue = asyncHandler(async (req, res) => {
   const { audit, severity, description, owner, due_date } = req.body;
 
@@ -113,7 +104,7 @@ const createComplianceIssue = asyncHandler(async (req, res) => {
 
   if (complianceIssue) {
     // Send notification for new compliance issue
-    await notifyNewComplianceIssue(complianceIssue);
+    await NotificationService.notifyNewComplianceIssue(complianceIssue);
 
     res.status(201).json(complianceIssue);
   } else {
@@ -122,9 +113,6 @@ const createComplianceIssue = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update a compliance issue
-// @route   PUT /api/compliance-issues/:id
-// @access  Private/Admin
 const updateComplianceIssue = asyncHandler(async (req, res) => {
   const issue = await ComplianceIssue.findById(req.params.id)
     .populate('audit', 'scope date department')
@@ -157,9 +145,6 @@ const updateComplianceIssue = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Delete a compliance issue
-// @route   DELETE /api/compliance-issues/:id
-// @access  Private/Admin
 const deleteComplianceIssue = asyncHandler(async (req, res) => {
   const issue = await ComplianceIssue.findById(req.params.id);
 
@@ -172,9 +157,6 @@ const deleteComplianceIssue = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get overdue compliance issues
-// @route   GET /api/compliance-issues/overdue
-// @access  Private
 const getOverdueIssues = asyncHandler(async (req, res) => {
   const { departmentId, page = 1, limit = 20 } = req.query;
 
@@ -183,10 +165,6 @@ const getOverdueIssues = asyncHandler(async (req, res) => {
     status: 'OPEN',
     due_date: { $lt: new Date() }
   };
-
-  // Note: For department filtering, we'd need to join with Audit collection
-  // For simplicity in this example, we'll get all overdue issues
-  // In production, this should be properly implemented with aggregation
 
   // Execute query with pagination
   const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -211,12 +189,9 @@ const getOverdueIssues = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Check and notify overdue issues (admin function)
-// @route   POST /api/compliance-issues/check-overdue
-// @access  Private/Admin
 const checkAndNotifyOverdueIssues = asyncHandler(async (req, res) => {
   try {
-    const result = await _checkAndNotifyOverdueIssues();
+    const result = await ComplianceService.checkAndNotifyOverdueIssues();
     res.json(result);
   } catch (error) {
     res.status(500);
@@ -224,12 +199,9 @@ const checkAndNotifyOverdueIssues = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get compliance issue statistics
-// @route   GET /api/compliance-issues/stats
-// @access  Private
 const getComplianceStatistics = asyncHandler(async (req, res) => {
   try {
-    const stats = await getStatistics(req.query);
+    const stats = await ComplianceService.getStatistics(req.query);
     res.json(stats);
   } catch (error) {
     res.status(500);
@@ -237,7 +209,7 @@ const getComplianceStatistics = asyncHandler(async (req, res) => {
   }
 });
 
-export default {
+export {
   getComplianceIssues,
   getComplianceIssueById,
   createComplianceIssue,

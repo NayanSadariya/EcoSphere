@@ -2,20 +2,20 @@ import asyncHandler from 'express-async-handler';
 import { createObjectCsvWriter } from 'csv-writer';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
-import CarbonTransaction, { find } from '../models/CarbonTransaction.js';
-import CSRActivity, { find as _find } from '../models/CSRActivity.js';
-import EmployeeParticipation, { find as __find } from '../models/EmployeeParticipation.js';
+import CarbonTransaction from '../models/CarbonTransaction.js';
+import CSRActivity from '../models/CSRActivity.js';
+import EmployeeParticipation from '../models/EmployeeParticipation.js';
 import Challenge from '../models/Challenge.js';
 import ChallengeParticipation from '../models/ChallengeParticipation.js';
-import Audit, { find as ___find } from '../models/Audit.js';
-import ComplianceIssue, { find as ____find } from '../models/ComplianceIssue.js';
+import Audit from '../models/Audit.js';
+import ComplianceIssue from '../models/ComplianceIssue.js';
 import ESGPolicy from '../models/ESGPolicy.js';
-import PolicyAcknowledgement, { find as _____find } from '../models/PolicyAcknowledgement.js';
+import PolicyAcknowledgement from '../models/PolicyAcknowledgement.js';
 import Reward from '../models/Reward.js';
 import RewardRedemption from '../models/RewardRedemption.js';
 import Badge from '../models/Badge.js';
 import EmployeeBadge from '../models/EmployeeBadge.js';
-import { calculateAndUpdateDepartmentScore, calculateOrganizationalESGScore } from '../utils/scoringService.js';
+import ScoringService from '../utils/scoringService.js';
 
 // Helper function to format date for CSV
 const formatDate = (date) => {
@@ -39,7 +39,7 @@ const getEnvironmentalReport = asyncHandler(async (req, res) => {
   }
 
   // Get carbon transactions with department info
-  const transactions = await find(filter)
+  const transactions = await CarbonTransaction.find(filter)
     .populate('department', 'name code')
     .sort({ date: 1 });
 
@@ -120,14 +120,14 @@ const getSocialReport = asyncHandler(async (req, res) => {
   }
 
   // Get CSR activities
-  const activities = await _find(activityFilter)
+  const activities = await CSRActivity.find(activityFilter)
     .populate('department', 'name code')
     .populate('category', 'name type')
     .sort({ date: -1 });
 
   // Get participations for these activities
   const activityIds = activities.map(a => a._id);
-  const participations = await __find({ activity: { $in: activityIds } })
+  const participations = await ChallengeParticipation.find({ activity: { $in: activityIds } })
     .populate('employee', 'name email department')
     .populate('activity', 'title description date')
     .sort({ createdAt: -1 });
@@ -268,20 +268,20 @@ const getGovernanceReport = asyncHandler(async (req, res) => {
   }
 
   // Get audits
-  const audits = await ___find(auditFilter)
+  const audits = await Audit.find(auditFilter)
     .populate('department', 'name code')
     .populate('auditor', 'name email')
     .sort({ date: -1 });
 
   // Get compliance issues for these audits
   const auditIds = audits.map(a => a._id);
-  const complianceIssues = await ____find({ audit: { $in: auditIds } })
+  const complianceIssues = await ComplianceIssue.find({ audit: { $in: auditIds } })
     .populate('audit', 'scope date department')
     .populate('owner', 'name email')
     .sort({ createdAt: -1 });
 
   // Get policy acknowledgements
-  const policyAcknowledgements = await _____find({})
+  const policyAcknowledgements = await PolicyAcknowledgement.find({})
     .populate('employee', 'name email department')
     .populate('policy', 'title version')
     .sort({ acknowledged_date: -1 });
@@ -384,7 +384,7 @@ const getGovernanceReport = asyncHandler(async (req, res) => {
   }));
 
   if (format === 'csv') {
-    // Generate CSV for audits
+    // Generate CSV for auds
     const auditCsvWriter = createObjectCsvWriter({
       path: 'governance_report_audits.csv',
       header: [
@@ -466,7 +466,7 @@ const getESGSummaryReport = asyncHandler(async (req, res) => {
 
       if (!deptScore) {
         // Calculate if not exists
-        deptScore = await calculateAndUpdateDepartmentScore(department);
+        deptScore = await ScoringService.calculateAndUpdateDepartmentScore(department);
       }
     } else {
       // Get all department scores
@@ -474,17 +474,17 @@ const getESGSummaryReport = asyncHandler(async (req, res) => {
         .populate('department', 'name code');
 
       // Calculate organizational score
-      orgScore = await calculateOrganizationalESGScore();
+      orgScore = await ScoringService.calculateOrganizationalESGScore();
     }
 
     // Get recent activities for context
-    const recentActivities = await _find({})
+    const recentActivities = await CSRActivity.find({})
       .sort({ date: -1 })
       .limit(5)
       .populate('department', 'name code')
       .populate('category', 'name');
 
-    const recentIssues = await ____find({ status: 'OPEN' })
+    const recentIssues = await ComplianceIssue.find({ status: 'OPEN' })
       .sort({ due_date: 1 })
       .limit(5)
       .populate('audit', 'scope department')
@@ -699,7 +699,7 @@ const getCustomReport = asyncHandler(async (req, res) => {
   }
 });
 
-export default {
+export {
   getEnvironmentalReport,
   getSocialReport,
   getGovernanceReport,

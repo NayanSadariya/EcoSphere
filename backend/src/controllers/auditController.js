@@ -211,7 +211,7 @@ const cancelAudit = asyncHandler(async (req, res) => {
   }
 });
 
-export default {
+export {
   getAudits,
   getAuditById,
   createAudit,

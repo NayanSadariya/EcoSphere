@@ -1,15 +1,15 @@
 import asyncHandler from 'express-async-handler';
-import { findOne, create, deleteMany } from '../models/Settings.js';
+import Settings from '../models/Settings.js';
 
 // @desc    Get settings
 // @route   GET /api/settings
 // @access  Private/Admin
 const getSettings = asyncHandler(async (req, res) => {
-  let settings = await findOne({});
+  let settings = await Settings.findOne({});
 
   // If no settings exist, create default ones
   if (!settings) {
-    settings = await create({
+    settings = await Settings.create({
       auto_emission_calculation_enabled: true,
       evidence_requirement_enabled: true,
       badge_auto_award_enabled: true,
@@ -38,11 +38,11 @@ const getSettings = asyncHandler(async (req, res) => {
 // @route   PUT /api/settings
 // @access  Private/Admin
 const updateSettings = asyncHandler(async (req, res) => {
-  let settings = await findOne({});
+  let settings = await Settings.findOne({});
 
   // If no settings exist, create them
   if (!settings) {
-    settings = await create({});
+    settings = await Settings.create({});
   }
 
   // Update fields if provided
@@ -80,9 +80,9 @@ const updateSettings = asyncHandler(async (req, res) => {
 // @route   DELETE /api/settings
 // @access  Private/Admin
 const resetSettings = asyncHandler(async (req, res) => {
-  await deleteMany({});
+  await Settings.deleteMany({});
 
-  const defaultSettings = await create({
+  const defaultSettings = await Settings.create({
     auto_emission_calculation_enabled: true,
     evidence_requirement_enabled: true,
     badge_auto_award_enabled: true,
@@ -106,7 +106,7 @@ const resetSettings = asyncHandler(async (req, res) => {
   res.json(defaultSettings);
 });
 
-export default {
+export {
   getSettings,
   updateSettings,
   resetSettings
