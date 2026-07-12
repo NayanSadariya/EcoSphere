@@ -7,11 +7,13 @@ type Props = {
   suffix?: string;
   prefix?: string;
   className?: string;
+  delay?: number;
 };
 
 /**
  * AnimatedNumber — counts up from 0 to `value` using an easing curve when it
- * enters the viewport. Re-runs when `value` changes.
+ * enters the viewport. Re-runs when `value` changes. Optional `delay` defers
+ * the start of the animation.
  */
 export default function AnimatedNumber({
   value,
@@ -20,6 +22,7 @@ export default function AnimatedNumber({
   suffix = '',
   prefix = '',
   className = '',
+  delay = 0,
 }: Props) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -44,12 +47,17 @@ export default function AnimatedNumber({
     };
 
     const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && run()),
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) {
+          if (delay > 0) setTimeout(run, delay * 1000);
+          else run();
+        }
+      }),
       { threshold: 0.3 }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [value, duration]);
+  }, [value, duration, delay]);
 
   useEffect(() => {
     started.current = false;

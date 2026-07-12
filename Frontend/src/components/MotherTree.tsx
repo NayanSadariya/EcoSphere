@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import AnimatedNumber from './AnimatedNumber';
 
@@ -8,83 +9,125 @@ type Props = {
 };
 
 /**
- * MotherTree — an SVG-rendered ancient tree representing the overall ESG score.
- * Glowing canopy rings pulse gently, the score floats in the center, and
- * ambient particles drift around it. The roots anchor three pillars below.
+ * MotherTree — the animated SVG centerpiece of the Command Center. A stylized
+ * tree whose canopy glows and breathes with the org's ESG score. Canvas
+ * particles orbit the canopy (pollen/spores). The score counts up in the
+ * center. Higher ESG = brighter glow, more particles, richer green.
  */
 export default function MotherTree({ score, grade, trend }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number>(0);
+
+  // Score-driven vitality (0..1)
+  const vitality = Math.max(0.3, Math.min(1.3, score / 78));
+  const glowStrength = 0.3 + vitality * 0.5;
+  const particleCount = Math.floor(16 * vitality);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const resize = () => {
+      width = canvas.offsetWidth;
+      height = canvas.offsetHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const motes = Array.from({ length: particleCount }, () => ({
+      angle: Math.random() * Math.PI * 2,
+      radius: 60 + Math.random() * 80,
+      speed: 0.002 + Math.random() * 0.004,
+      size: 0.8 + Math.random() * 2,
+      yOff: (Math.random() - 0.5) * 100,
+      twinkle: Math.random() * Math.PI * 2,
+    }));
+
+    let frame = 0;
+    let visible = true;
+    const onVis = () => { visible = !document.hidden; };
+    document.addEventListener('visibilitychange', onVis);
+
+    const draw = () => {
+      if (!visible) {
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      frame++;
+      ctx.clearRect(0, 0, width, height);
+      const cx = width / 2;
+      const cy = height / 2;
+
+      for (const m of motes) {
+        m.angle += m.speed;
+        m.twinkle += 0.04;
+        const x = cx + Math.cos(m.angle) * m.radius;
+        const y = cy + Math.sin(m.angle) * m.radius * 0.5 + m.yOff + Math.sin(frame * 0.01 + m.twinkle) * 6;
+        const tw = 0.4 + Math.abs(Math.sin(m.twinkle)) * 0.6;
+        const r = m.size * (2 + tw * 2);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(120, 200, 160, ${0.8 * tw})`);
+        g.addColorStop(0.4, `rgba(82, 183, 136, ${0.3 * tw})`);
+        g.addColorStop(1, 'rgba(82, 183, 136, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+
+      animationRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animationRef.current);
+      window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [particleCount]);
+
   return (
-    <div className="relative flex flex-col items-center" style={{ width: 360, height: 360 }}>
+    <div className="relative flex flex-col items-center">
       {/* Ambient glow behind tree */}
       <motion.div
-        className="absolute inset-0"
-        animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-8 h-72 w-72 rounded-full"
         style={{
-          background: 'radial-gradient(circle at 50% 40%, rgba(92,255,135,0.25) 0%, rgba(57,217,138,0.08) 40%, transparent 70%)',
-          borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(82,183,136,${glowStrength * 0.4}) 0%, rgba(45,106,79,${glowStrength * 0.15}) 40%, transparent 70%)`,
         }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.6, 0.9, 0.6] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      {/* Orbiting score ring */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-      >
-        <svg viewBox="0 0 360 360" className="h-full w-full">
-          <defs>
-            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#52B788" stopOpacity="0.8" />
-              <stop offset="50%" stopColor="#2D6A4F" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#52B788" stopOpacity="0.8" />
-            </linearGradient>
-          </defs>
-          <circle
-            cx="180" cy="180" r="168"
-            fill="none"
-            stroke="url(#ringGrad)"
-            strokeWidth="1.5"
-            strokeDasharray="2 8"
-          />
-        </svg>
-      </motion.div>
+      {/* Particle canvas overlay */}
+      <canvas ref={canvasRef} className="absolute top-0 h-80 w-80 pointer-events-none" style={{ width: 320, height: 320 }} />
 
-      {/* Counter-rotating inner ring */}
-      <motion.div
-        className="absolute inset-6"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
-      >
-        <svg viewBox="0 0 312 312" className="h-full w-full">
-          <circle
-            cx="156" cy="156" r="148"
-            fill="none"
-            stroke="rgba(92,255,135,0.15)"
-            strokeWidth="1"
-            strokeDasharray="40 20"
-          />
-        </svg>
-      </motion.div>
-
-      {/* The tree SVG */}
+      {/* Tree SVG */}
       <motion.svg
-        viewBox="0 0 200 200"
-        className="absolute inset-0 h-full w-full"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+        width="220"
+        height="280"
+        viewBox="0 0 220 280"
+        className="relative z-10"
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
       >
         <defs>
-          <radialGradient id="canopyGrad" cx="50%" cy="45%" r="55%">
-            <stop offset="0%" stopColor="#52B788" stopOpacity="0.35" />
-            <stop offset="50%" stopColor="#2D6A4F" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#1B4332" stopOpacity="0.05" />
+          <radialGradient id="canopy" cx="40%" cy="35%">
+            <stop offset="0%" stopColor={`rgba(120,200,160,${0.5 + vitality * 0.3})`} />
+            <stop offset="60%" stopColor="rgba(45,106,79,0.6)" />
+            <stop offset="100%" stopColor="rgba(2,48,32,0.4)" />
           </radialGradient>
-          <linearGradient id="trunkGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#1a2b1f" />
-            <stop offset="50%" stopColor="#2d4a36" />
-            <stop offset="100%" stopColor="#1a2b1f" />
+          <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#1B4332" />
+            <stop offset="50%" stopColor="#2D6A4F" />
+            <stop offset="100%" stopColor="#1B4332" />
           </linearGradient>
           <filter id="treeGlow">
             <feGaussianBlur stdDeviation="3" result="blur" />
@@ -95,102 +138,64 @@ export default function MotherTree({ score, grade, trend }: Props) {
           </filter>
         </defs>
 
-        {/* Roots */}
-        <g stroke="url(#trunkGrad)" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.6">
-          <path d="M100 165 Q90 175 80 185" />
-          <path d="M100 165 Q100 178 100 190" />
-          <path d="M100 165 Q110 175 120 185" />
-          <path d="M100 165 Q75 172 65 180" />
-          <path d="M100 165 Q125 172 135 180" />
-        </g>
-
         {/* Trunk */}
-        <path
-          d="M95 165 L93 110 L107 110 L105 165 Z"
-          fill="url(#trunkGrad)"
-        />
-        {/* Trunk highlight */}
-        <path d="M98 160 L97 115 L102 115 L103 160 Z" fill="rgba(92,255,135,0.08)" />
-
+        <path d="M108 280 L104 170 L116 170 L112 280 Z" fill="url(#trunk)" />
         {/* Branches */}
-        <g stroke="url(#trunkGrad)" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.8">
-          <path d="M100 120 Q80 100 65 85" />
-          <path d="M100 115 Q120 95 135 82" />
-          <path d="M100 108 Q85 88 72 70" />
-          <path d="M100 105 Q115 85 128 68" />
-          <path d="M100 100 Q100 80 100 62" />
-        </g>
+        <path d="M110 180 Q90 160 70 150" stroke="#2D6A4F" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.7" />
+        <path d="M110 175 Q130 155 150 145" stroke="#2D6A4F" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.7" />
 
-        {/* Canopy layers — pulsing glow circles */}
-        <motion.g
-          animate={{ opacity: [0.6, 0.9, 0.6] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        {/* Canopy layers */}
+        <motion.ellipse
+          cx="110" cy="110" rx="85" ry="70"
+          fill="url(#canopy)"
           filter="url(#treeGlow)"
-        >
-          <circle cx="100" cy="60" r="42" fill="url(#canopyGrad)" />
-          <circle cx="72" cy="78" r="28" fill="url(#canopyGrad)" />
-          <circle cx="130" cy="76" r="30" fill="url(#canopyGrad)" />
-          <circle cx="100" cy="85" r="25" fill="url(#canopyGrad)" opacity="0.6" />
-        </motion.g>
+          animate={{ rx: [85, 88, 85], ry: [70, 72, 70] }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.ellipse
+          cx="80" cy="80" rx="50" ry="42"
+          fill="url(#canopy)"
+          filter="url(#treeGlow)"
+          animate={{ rx: [50, 53, 50], ry: [42, 44, 42] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+        />
+        <motion.ellipse
+          cx="140" cy="85" rx="45" ry="38"
+          fill="url(#canopy)"
+          filter="url(#treeGlow)"
+          animate={{ rx: [45, 48, 45], ry: [38, 40, 38] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        />
 
-        {/* Glowing dots on canopy (like fruit/lights) */}
-        {[
-          { cx: 100, cy: 38 },
-          { cx: 78, cy: 55 },
-          { cx: 125, cy: 52 },
-          { cx: 62, cy: 72 },
-          { cx: 138, cy: 70 },
-          { cx: 95, cy: 75 },
-          { cx: 115, cy: 82 },
-        ].map((d, i) => (
-          <motion.circle
-            key={i}
-            cx={d.cx}
-            cy={d.cy}
-            r="2.5"
-            fill="#52B788"
-            animate={{ opacity: [0.3, 1, 0.3], r: [2, 3.5, 2] }}
-            transition={{ duration: 2.5, delay: i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        ))}
+        {/* Small accent leaves */}
+        <circle cx="60" cy="60" r="4" fill="rgba(82,183,136,0.5)" />
+        <circle cx="160" cy="55" r="3" fill="rgba(82,183,136,0.4)" />
+        <circle cx="100" cy="40" r="3.5" fill="rgba(120,200,160,0.5)" />
       </motion.svg>
 
-      {/* Floating score readout */}
+      {/* Score display */}
       <motion.div
-        className="absolute top-[42%] flex flex-col items-center"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.8 }}
+        className="absolute top-[78px] z-20 flex flex-col items-center"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="font-display text-5xl font-bold gradient-text text-glow">
-          <AnimatedNumber value={score} decimals={1} />
+        <div className="rounded-2xl px-5 py-2.5 text-center" style={{ background: 'rgba(4,4,4,0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="font-display text-5xl font-bold gradient-text" style={{ filter: 'drop-shadow(0 0 12px rgba(82,183,136,0.4))' }}>
+            <AnimatedNumber value={score} decimals={1} />
+          </div>
+          <div className="mt-0.5 text-sm font-medium text-accent-glow">Grade {grade}</div>
+          <div className="mt-0.5 flex items-center justify-center gap-1 text-xs text-mist">
+            <motion.span
+              animate={{ y: [0, -2, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              ▲
+            </motion.span>
+            {trend}% this quarter
+          </div>
         </div>
-        <div className="mt-1 flex items-center gap-2">
-          <span className="rounded-full glass-accent px-2.5 py-0.5 text-xs font-semibold text-accent-glow">{grade}</span>
-          <span className="text-xs text-accent-glow">+{trend}%</span>
-        </div>
-        <div className="mt-0.5 text-[10px] uppercase tracking-widest text-mist">ESG Score</div>
       </motion.div>
-
-      {/* Drifting particles around tree */}
-      {[...Array(6)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute h-1 w-1 rounded-full bg-accent-glow"
-          style={{ left: `${50}%`, top: `${50}%` }}
-          animate={{
-            x: [0, Math.cos((i / 6) * Math.PI * 2) * 140, 0],
-            y: [0, Math.sin((i / 6) * Math.PI * 2) * 140, 0],
-            opacity: [0, 0.8, 0],
-          }}
-          transition={{
-            duration: 6 + i,
-            delay: i * 0.5,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      ))}
     </div>
   );
 }

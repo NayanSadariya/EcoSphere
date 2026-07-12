@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 
 type Props = {
   data: number[];
@@ -11,7 +11,8 @@ type Props = {
 
 /**
  * Sparkline — a lightweight SVG line chart. Animates the stroke drawing in
- * on mount. Optional gradient fill below the line.
+ * on mount. Optional gradient fill below the line. Responsive: uses viewBox
+ * so it scales to container width when width is not explicitly set.
  */
 export default function Sparkline({
   data,
@@ -23,23 +24,28 @@ export default function Sparkline({
 }: Props) {
   const pathRef = useRef<SVGPathElement>(null);
   const fillRef = useRef<SVGPathElement>(null);
+  const rawId = useId();
+  const id = `spark-${rawId.replace(/:/g, '')}`;
 
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const pad = 4;
-  const stepX = (width - pad * 2) / (data.length - 1);
+  const { linePath, fillPath, lastPoint } = useMemo(() => {
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+    const range = max - min || 1;
+    const pad = 4;
+    const stepX = (width - pad * 2) / (data.length - 1);
 
-  const points = data.map((d, i) => {
-    const x = pad + i * stepX;
-    const y = pad + (height - pad * 2) * (1 - (d - min) / range);
-    return [x, y];
-  });
+    const points = data.map((d, i) => {
+      const x = pad + i * stepX;
+      const y = pad + (height - pad * 2) * (1 - (d - min) / range);
+      return [x, y] as const;
+    });
 
-  const linePath = points
-    .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`)
-    .join(' ');
-  const fillPath = `${linePath} L${points[points.length - 1][0].toFixed(1)},${height - pad} L${pad},${height - pad} Z`;
+    const lp = points
+      .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`)
+      .join(' ');
+    const fp = `${lp} L${points[points.length - 1][0].toFixed(1)},${height - pad} L${pad},${height - pad} Z`;
+    return { linePath: lp, fillPath: fp, lastPoint: points[points.length - 1] };
+  }, [data, width, height]);
 
   useEffect(() => {
     const path = pathRef.current;
@@ -59,9 +65,7 @@ export default function Sparkline({
       });
     }
     return () => cancelAnimationFrame(raf);
-  }, [data]);
-
-  const id = `spark-${Math.random().toString(36).slice(2, 9)}`;
+  }, [linePath]);
 
   return (
     <svg
@@ -89,8 +93,8 @@ export default function Sparkline({
         style={{ filter: `drop-shadow(0 0 4px ${color}88)` }}
       />
       <circle
-        cx={points[points.length - 1][0]}
-        cy={points[points.length - 1][1]}
+        cx={lastPoint[0]}
+        cy={lastPoint[1]}
         r="3"
         fill={color}
         style={{ filter: `drop-shadow(0 0 6px ${color})` }}
