@@ -1,0 +1,35 @@
+{
+  "name": "ecosphere-backend",
+  "version": "1.0.0",
+  "description": "ESG Management Platform Backend",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/seed/seed.js",
+    "test": "jest --detectOpenHandles --forceExit"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-async-handler": "^1.2.0",
+    "helmet": "^7.0.0",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^7.5.0",
+    "mongoose-autopopulate": "^1.1.0",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "jest": "^29.6.2",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3"
+  },
+  "keywords": ["esg", "esg-management", "esg-platform", "nodejs", "express", "mongodb"],
+  "author": "EcoSphere Team",
+  "license": "MIT"
+}

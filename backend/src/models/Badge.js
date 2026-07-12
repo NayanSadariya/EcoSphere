@@ -51,6 +51,6 @@ badgeSchema.virtual('awards', {
 
 const Badge = model('Badge', badgeSchema);
 
-export default model('Badge', badgeSchema);
+// export default model('Badge', badgeSchema);
 
 export default Badge;
