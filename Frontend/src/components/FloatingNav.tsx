@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  LayoutDashboard,
-  Leaf,
-  Users,
-  Scale,
-  Home,
-} from 'lucide-react';
+import { LayoutDashboard, Leaf, Users, Scale, Home } from 'lucide-react';
 
 export type PageId = 'landing' | 'overview' | 'environmental' | 'social' | 'governance';
 
@@ -24,8 +18,8 @@ type Props = {
 };
 
 /**
- * FloatingNav — a vertical glass nav docked left-center. Icons only by
- * default; labels expand into view on hover. Active item glows accent.
+ * FloatingNav — vertical glass nav docked left-center. Icons only by default;
+ * labels expand on hover. Active item glows accent. Keyboard-accessible.
  */
 export default function FloatingNav({ current, onNavigate }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
@@ -35,7 +29,8 @@ export default function FloatingNav({ current, onNavigate }: Props) {
       initial={{ x: -80, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ delay: 0.5, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed left-5 top-1/2 z-50 -translate-y-1/2"
+      className="fixed left-5 top-1/2 z-40 -translate-y-1/2"
+      aria-label="Main navigation"
     >
       <div className="glass rounded-full p-2 flex flex-col gap-1">
         {items.map((item) => {
@@ -63,12 +58,11 @@ export default function FloatingNav({ current, onNavigate }: Props) {
               </AnimatePresence>
               <button
                 onClick={() => onNavigate(item.id)}
-                className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ${
-                  active
-                    ? 'text-white'
-                    : 'text-mist hover:text-white'
-                }`}
                 aria-label={item.label}
+                aria-current={active ? 'page' : undefined}
+                className={`relative flex h-11 w-11 items-center justify-center rounded-full outline-none transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-accent-glow/40 ${
+                  active ? 'text-white' : 'text-mist hover:text-white'
+                }`}
               >
                 {active && (
                   <motion.span

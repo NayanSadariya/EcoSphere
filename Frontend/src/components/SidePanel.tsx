@@ -68,7 +68,7 @@ export default function SidePanel() {
       initial={{ x: 60, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ delay: 0.6, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed right-4 top-20 z-40 w-72 lg:w-80"
+      className="fixed right-4 top-20 z-30 hidden w-72 lg:block lg:w-80"
     >
       <div className="glass rounded-3xl p-4">
         {/* Tab switcher */}

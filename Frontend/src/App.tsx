@@ -37,9 +37,10 @@ export default function App() {
 }
 
 function AppInner() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const [page, setPage] = useState<PageId | 'auth'>('landing');
   const [showNav, setShowNav] = useState(false);
+  const [esgScore, setEsgScore] = useState(78);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -69,6 +70,12 @@ function AppInner() {
     setPage('overview');
   };
 
+  const handleLogout = () => {
+    logout();
+    setShowNav(false);
+    setPage('auth');
+  };
+
   const isLanding = page === 'landing';
 
   if (authLoading) {
@@ -87,6 +94,7 @@ function AppInner() {
         showRays
         showButterflies={!isLanding}
         showFog={!isLanding}
+        esgScore={esgScore}
       />
 
       {!isLanding && (
@@ -118,7 +126,7 @@ function AppInner() {
           >
             {page === 'landing' && <Landing onEnter={handleEnter} />}
             {page === 'auth' && <AuthScreen onSuccess={handleAuthSuccess} onBack={() => handleNavigate('landing')} />}
-            {page === 'overview' && <CommandCenter onNavigate={handleNavigate} />}
+            {page === 'overview' && <CommandCenter onNavigate={handleNavigate} onScore={setEsgScore} />}
             {page === 'environmental' && (
               <ErrorBoundary fallback={<PageLoader />}><Suspense fallback={<PageLoader />}><EnvironmentModule /></Suspense></ErrorBoundary>
             )}
@@ -134,7 +142,7 @@ function AppInner() {
 
       {!isLanding && (page as string) !== 'auth' && (
         <>
-          <TopBar onLogoClick={() => handleNavigate('overview')} />
+          <TopBar onLogoClick={() => handleNavigate('overview')} onLogout={handleLogout} />
           {page === 'overview' && <SidePanel />}
         </>
       )}
@@ -144,13 +152,17 @@ function AppInner() {
 
 /* ---------- Command Center (Mother Tree + Spline Forest) ---------- */
 
-function CommandCenter({ onNavigate }: { onNavigate: (p: PageId) => void }) {
+function CommandCenter({ onNavigate, onScore }: { onNavigate: (p: PageId) => void; onScore: (n: number) => void }) {
   const { data: esgScore, loading } = useOrgEsgScore();
 
   const score = esgScore?.total_score ?? 78.4;
   const grade = esgScore?.grade ?? 'A-';
   const trend = esgScore?.trend ?? 3.2;
   const rank = esgScore?.rank ?? 'Top 8%';
+
+  useEffect(() => {
+    if (esgScore) onScore(esgScore.total_score);
+  }, [esgScore, onScore]);
 
   const pillarConfig = [
     { name: 'Environment', score: esgScore?.environmental_score ?? 82, color: '#52B788', variant: 'environment' as const, page: 'environmental' as PageId, subtitle: 'Carbon · Energy · Goals' },
@@ -159,7 +171,7 @@ function CommandCenter({ onNavigate }: { onNavigate: (p: PageId) => void }) {
   ];
 
   return (
-    <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-24 md:pl-24 md:pt-28">
+    <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-24 md:pl-24 md:pr-[22rem] md:pt-28">
       {/* Spline Forest as visual centerpiece — behind the UI */}
       <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
         <SplineForest className="h-[70vh] w-full max-w-4xl opacity-60" />

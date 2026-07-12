@@ -24,6 +24,13 @@ export interface User {
   xp_total: number;
   points_balance: number;
   avatar?: string;
+  organization?: string;
+  memberSince?: string;
+  bio?: string;
+  website?: string;
+  linkedin?: string;
+  github?: string;
+  phone?: string;
 }
 
 export interface AuthTokens {

@@ -22,11 +22,18 @@ export const mockUser: User = {
   id: 'usr-001',
   name: 'Alex Rivera',
   email: 'alex@ecosphere.io',
-  department: 'dep-001',
+  department: 'Research & Development',
   role: 'admin',
   status: 'active',
   xp_total: 84200,
   points_balance: 12400,
+  organization: 'EcoSphere Inc.',
+  memberSince: '2024-03-15',
+  bio: 'Sustainability strategist passionate about merging technology with environmental impact. Leading R&D initiatives for carbon-neutral operations.',
+  website: 'https://alexrivera.ecosphere.io',
+  linkedin: 'https://linkedin.com/in/alexrivera',
+  github: 'https://github.com/alexrivera',
+  phone: '+1 (555) 248-9031',
 };
 
 export const mockAuthResponse: AuthResponse = {
