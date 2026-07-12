@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, ChevronDown } from 'lucide-react';
+import { Bell, ChevronDown, LogOut } from 'lucide-react';
 import { useNotifications } from '../hooks/useEsgData';
 import { useAuth } from '../contexts/AuthContext';
 import { mockNotifications } from '../api/mockData';
@@ -65,6 +65,11 @@ export default function TopBar({ onLogoClick, onLogout }: Props) {
     closeAll();
     onLogoClick();
   }, [closeAll, onLogoClick]);
+
+  const handleLogout = useCallback(() => {
+    closeAll();
+    onLogout();
+  }, [closeAll, onLogout]);
 
   const name = user?.name ?? 'Guest';
 
@@ -151,6 +156,7 @@ export default function TopBar({ onLogoClick, onLogout }: Props) {
             }}
             className="group flex items-center gap-2.5 rounded-full bg-white/5 py-1.5 pl-1.5 pr-3 transition-all duration-300 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-accent-glow/40"
             aria-label="Open profile"
+            aria-expanded={showProfile}
           >
             {/* Avatar */}
             <div className="relative h-7 w-7 overflow-hidden rounded-full ring-1 ring-white/10 transition-shadow duration-300 group-hover:ring-accent-glow/40 group-hover:shadow-glow">
@@ -175,13 +181,24 @@ export default function TopBar({ onLogoClick, onLogout }: Props) {
               <ChevronDown size={15} />
             </motion.span>
           </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-mist transition-colors hover:bg-red-500/10 hover:text-red-400"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={17} />
+          </button>
         </div>
       </motion.div>
 
-      {/* Profile Panel — renders its own AnimatePresence internally */}
-      {showProfile && (
-        <ProfilePanel onClose={() => setShowProfile(false)} onLogout={onLogout} />
-      )}
+      <ProfilePanel
+        open={showProfile}
+        onClose={() => setShowProfile(false)}
+        onLogout={handleLogout}
+      />
     </>
   );
 }

@@ -16,8 +16,10 @@ import {
   Trophy,
   Gift,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import { useRewards, useSocialReport } from '../hooks/useEsgData';
+import { useAuth } from '../contexts/AuthContext';
 import { mockSocialReport, mockRewards } from '../api/mockData';
 
 const iconMap: Record<string, typeof Sun> = {
@@ -42,13 +44,18 @@ const tagColor: Record<string, string> = {
 
 type Tab = 'activity' | 'challenges' | 'rewards';
 
+type Props = {
+  onLogout: () => void;
+};
+
 /**
  * SidePanel — right-side floating glass panel with tabs for Recent Activity,
  * Upcoming Challenges, and the Reward Store. Each section uses floating glass
  * cards with stagger animations.
  */
-export default function SidePanel() {
+export default function SidePanel({ onLogout }: Props) {
   const [tab, setTab] = useState<Tab>('activity');
+  const { user } = useAuth();
   const { data: rewardsData } = useRewards();
   const { data: socialData } = useSocialReport();
   const social = socialData ?? mockSocialReport;
@@ -63,6 +70,10 @@ export default function SidePanel() {
   ];
   const upcomingChallenges = social.challenges.map((c) => ({ title: c.title, daysLeft: Math.max(1, Math.ceil((new Date(c.deadline).getTime() - Date.now()) / 86400000)), xp: c.xp_value, participants: c.participants ?? 0 }));
 
+  const initials = user?.name
+    ? user.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
+    : 'GU';
+
   return (
     <motion.div
       initial={{ x: 60, opacity: 0 }}
@@ -71,6 +82,25 @@ export default function SidePanel() {
       className="fixed right-4 top-20 z-30 hidden w-72 lg:block lg:w-80"
     >
       <div className="glass rounded-3xl p-4">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-3xl bg-white/5 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-glow/15 text-sm font-bold text-white">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">{user?.name ?? 'Guest User'}</p>
+              <p className="truncate text-[11px] text-mist">{user?.organization ?? 'EcoSphere User'}</p>
+            </div>
+          </div>
+          <button
+            onClick={onLogout}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-300 transition-colors hover:bg-red-500/20"
+            aria-label="Logout"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+
         {/* Tab switcher */}
         <div className="flex gap-1 rounded-full bg-white/5 p-1">
           {[

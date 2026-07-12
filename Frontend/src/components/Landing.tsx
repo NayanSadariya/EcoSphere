@@ -6,6 +6,7 @@ import MagneticButton from './MagneticButton';
 
 type Props = {
   onEnter: () => void;
+  onLearnMore: () => void;
 };
 
 const floatingIcons = [
@@ -17,7 +18,7 @@ const floatingIcons = [
   { Icon: Leaf, top: '82%', left: '55%', delay: 2.1, dur: 9.5 },
 ];
 
-export default function Landing({ onEnter }: Props) {
+export default function Landing({ onEnter, onLearnMore }: Props) {
   const [transitioning, setTransitioning] = useState(false);
 
   const handleEnter = () => {
@@ -100,7 +101,7 @@ export default function Landing({ onEnter }: Props) {
             <MagneticButton onClick={handleEnter} icon={<ArrowRight size={18} />}>
               Enter Command Center
             </MagneticButton>
-            <MagneticButton variant="ghost" icon={<Sparkles size={16} />}>
+            <MagneticButton variant="ghost" icon={<Sparkles size={16} />} onClick={onLearnMore}>
               Learn More
             </MagneticButton>
           </div>

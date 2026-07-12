@@ -4,6 +4,7 @@ import { Sparkles, TrendingUp, ArrowLeft, Loader2 } from 'lucide-react';
 import AmbientForest from './components/AmbientForest';
 import FloatingNav, { type PageId } from './components/FloatingNav';
 import Landing from './components/Landing';
+import LearnMorePage from './components/LearnMorePage';
 import TopBar from './components/TopBar';
 import SidePanel from './components/SidePanel';
 import MotherTree from './components/MotherTree';
@@ -38,7 +39,7 @@ export default function App() {
 
 function AppInner() {
   const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const [page, setPage] = useState<PageId | 'auth'>('landing');
+  const [page, setPage] = useState<PageId | 'auth' | 'about'>('landing');
   const [showNav, setShowNav] = useState(false);
   const [esgScore, setEsgScore] = useState(78);
 
@@ -77,6 +78,7 @@ function AppInner() {
   };
 
   const isLanding = page === 'landing';
+  const isAbout = page === 'about';
 
   if (authLoading) {
     return (
@@ -89,15 +91,15 @@ function AppInner() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ink-base text-white">
       <AmbientForest
-        density={isLanding ? 1.2 : 0.7}
+        density={isLanding || isAbout ? 1.2 : 0.7}
         showLeaves
         showRays
-        showButterflies={!isLanding}
-        showFog={!isLanding}
+        showButterflies={!isLanding && !isAbout}
+        showFog={!isLanding && !isAbout}
         esgScore={esgScore}
       />
 
-      {!isLanding && (
+      {!isLanding && !isAbout && (
         <>
           <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-30" />
           <div
@@ -124,7 +126,13 @@ function AppInner() {
             exit={{ opacity: 0, y: -20, filter: 'blur(8px)' }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            {page === 'landing' && <Landing onEnter={handleEnter} />}
+            {page === 'landing' && (
+              <Landing
+                onEnter={handleEnter}
+                onLearnMore={() => setPage('about')}
+              />
+            )}
+            {page === 'about' && <LearnMorePage onBack={() => setPage('landing')} />}
             {page === 'auth' && <AuthScreen onSuccess={handleAuthSuccess} onBack={() => handleNavigate('landing')} />}
             {page === 'overview' && <CommandCenter onNavigate={handleNavigate} onScore={setEsgScore} />}
             {page === 'environmental' && (
@@ -143,7 +151,7 @@ function AppInner() {
       {!isLanding && (page as string) !== 'auth' && (
         <>
           <TopBar onLogoClick={() => handleNavigate('overview')} onLogout={handleLogout} />
-          {page === 'overview' && <SidePanel />}
+{page === 'overview' && <SidePanel onLogout={handleLogout} />}
         </>
       )}
     </div>

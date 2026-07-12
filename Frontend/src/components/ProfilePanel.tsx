@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera, X, LogOut, Pencil, Save, Mail, Building2, Briefcase, CalendarDays,
@@ -13,6 +14,7 @@ import AnimatedNumber from './AnimatedNumber';
 import ProgressBar from './ProgressBar';
 
 type Props = {
+  open: boolean;
   onClose: () => void;
   onLogout: () => void;
 };
@@ -156,7 +158,7 @@ function EditField({
 
 /* =============================== Main Panel ================================ */
 
-export default function ProfilePanel({ onClose, onLogout }: Props) {
+export default function ProfilePanel({ open, onClose, onLogout }: Props) {
   const { user, updateUser } = useAuth();
   const { data: esgData } = useOrgEsgScore();
   const { data: socialData } = useSocialReport();
@@ -260,27 +262,31 @@ export default function ProfilePanel({ onClose, onLogout }: Props) {
   const role = user?.role ?? 'member';
   const dept = user?.department ?? '—';
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      {/* Backdrop */}
-      <motion.div
-        className="fixed inset-0 z-[90]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        onClick={onClose}
-        style={{ background: 'rgba(4,4,4,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
-      />
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="profile-backdrop"
+            className="fixed inset-0 z-[200]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={onClose}
+            style={{ background: 'rgba(4,4,4,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+          />
 
-      {/* Panel */}
-      <motion.div
-        initial={{ opacity: 0, y: -24, scale: 0.96, filter: 'blur(8px)' }}
-        animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-        exit={{ opacity: 0, y: -24, scale: 0.96, filter: 'blur(8px)' }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed left-1/2 top-6 z-[100] flex max-h-[calc(100vh-3rem)] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 flex-col"
-      >
+          {/* Panel */}
+          <motion.div
+            key="profile-panel"
+            initial={{ opacity: 0, y: -24, scale: 0.96, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -24, scale: 0.96, filter: 'blur(8px)' }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed left-1/2 top-20 z-[210] flex max-h-[calc(100vh-6rem)] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 flex-col"
+          >
         <div className="glass-strong flex max-h-[calc(100vh-3rem)] flex-col overflow-hidden rounded-3xl">
           {/* Header */}
           <div className="relative shrink-0 overflow-hidden p-6">
@@ -564,7 +570,10 @@ export default function ProfilePanel({ onClose, onLogout }: Props) {
             </button>
           </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body,
   );
 }
